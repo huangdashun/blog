@@ -1,8 +1,8 @@
-- - - -
+---
 title: Markdown语法的学习
-date: 2017-10-26 20:17:15
+date: 2017-10-27 21:40:26
 tags: Whatever happens tomorrow, we had today.
-- - - -
+---
  **本文基本引用** [Markdown语法手册(完整整理)](http://blog.leanote.com/post/freewalk/Markdown-%E8%AF%AD%E6%B3%95%E6%89%8B%E5%86%8C#),感谢该文章的收集者.另外推荐大家使用bear软件,Markdown语法鼠标点点就可以.  
 - - - -
 ### 1.斜体和粗体
