@@ -1,7 +1,7 @@
 ---
 title: mac下打开已安装的ssh文件夹
 date: 2017-10-26 23:34:57
-tags:
+tags:We had today.
 ---
 1. 打开终端
 2. 输入 open ~/.ssh,就可以打开文件
