@@ -113,7 +113,8 @@ tags:
 
 # Handler如何与Looper,MessageQueue合作的
 
-![image](https://github.com/huangdashun/blog/blob/master/source/_posts/Handler/Handler%E7%9A%84%E9%80%9A%E4%BF%A1.png)
+![]("https://github.com/huangdashun/blog/blob/master/source/_posts/Handler/Handler%E7%9A%84%E9%80%9A%E4%BF%A1.png")
+ 
 
 ## MessageQueue
  中文翻译: 消息队列,但是它内部是采用*单链表*的数据结构来存储消息列表.
