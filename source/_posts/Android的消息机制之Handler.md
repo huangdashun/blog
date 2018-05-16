@@ -472,3 +472,85 @@ public final boolean post(Runnable r)
 
 ## ThreadLocal
 作用:可以在每个线程中存储数据,读写操作仅局限于各自线程的内部,通过ThreadLocal可以轻松获取每个线程的Looper,可以在不同的线程中互不干扰的存储并提供数据.
+
+# 主线程中的Looper.loop()一直无限循环为什么不会造成ANR？
+
+## ANR造成的原因：
+1. 当前的事件没有机会得到处理
+2. 当前的事件正在处理，但没有及时完成。
+
+## 源码分析
+### ActivityThread源码
+
+```
+    public static final void main(String[] args) {
+        ...
+        //创建Looper和MessageQueue
+        Looper.prepareMainLooper();
+        ...
+        //轮询器开始轮询
+        Looper.loop();
+        ...
+    }
+```
+#### Looper.loop()方法
+
+
+```
+   while (true) {
+       //取出消息队列的消息，可能会阻塞
+       Message msg = queue.next(); // might block
+       ...
+       //解析消息，分发消息
+       msg.target.dispatchMessage(msg);
+       ...
+    }
+```
+**反证：如果main方法中没有looper循环，那么主线程一运行完毕就会退出，肯定不行。所以main方法主要做的就是消息循环。**
+
+### 那么为什么这个死循环不会造成ANR
+
+因为 Android 的是由事件驱动的，looper.loop() 不断地接收事件、处理事件，每一个点击触摸或者说 Activity 的生命周期都是运行在 Looper.loop() 的控制之下，如果它停止了，应用也就停止了。只能是某一个消息或者说对消息的处理阻塞了Looper.loop()，而不是 Looper.loop() 阻塞它。
+
+**所以我们的代码其实都是在该循环里执行的，当然不会阻塞。**
+
+#### handleMessage方法部分源码
+
+
+```
+public void handleMessage(Message msg) {
+        if (DEBUG_MESSAGES) Slog.v(TAG, ">>> handling: " + codeToString(msg.what));
+        switch (msg.what) {
+            case LAUNCH_ACTIVITY: {
+                Trace.traceBegin(Trace.TRACE_TAG_ACTIVITY_MANAGER, "activityStart");
+                final ActivityClientRecord r = (ActivityClientRecord) msg.obj;
+                r.packageInfo = getPackageInfoNoCheck(r.activityInfo.applicationInfo, r.compatInfo);
+                handleLaunchActivity(r, null);
+                Trace.traceEnd(Trace.TRACE_TAG_ACTIVITY_MANAGER);
+            }
+            break;
+            case RELAUNCH_ACTIVITY: {
+                Trace.traceBegin(Trace.TRACE_TAG_ACTIVITY_MANAGER, "activityRestart");
+                ActivityClientRecord r = (ActivityClientRecord) msg.obj;
+                handleRelaunchActivity(r);
+                Trace.traceEnd(Trace.TRACE_TAG_ACTIVITY_MANAGER);
+            }
+            break;
+            case PAUSE_ACTIVITY:
+                Trace.traceBegin(Trace.TRACE_TAG_ACTIVITY_MANAGER, "activityPause");
+                handlePauseActivity((IBinder) msg.obj, false, (msg.arg1 & 1) != 0, msg.arg2, (msg.arg1 & 2) != 0);
+                maybeSnapshot();
+                Trace.traceEnd(Trace.TRACE_TAG_ACTIVITY_MANAGER);
+                break;
+            case PAUSE_ACTIVITY_FINISHING:
+                Trace.traceBegin(Trace.TRACE_TAG_ACTIVITY_MANAGER, "activityPause");
+                handlePauseActivity((IBinder) msg.obj, true, (msg.arg1 & 1) != 0, msg.arg2, (msg.arg1 & 1) != 0);
+                Trace.traceEnd(Trace.TRACE_TAG_ACTIVITY_MANAGER);
+                break;
+            ...........
+        }
+    }
+```
+可以看到Activity的生命周期都是依靠主线程的Looper.loop，当收到不同Message采取不同的措施。
+
+**总结：Looer.loop()方法可能会引起主线程的阻塞，但只要它的消息循环没有被阻塞，能一直处理事件就不会产生ANR异常。**
